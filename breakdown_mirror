@@ -3,13 +3,25 @@
 CACHE_LOCATION="/mnt/cache"
 UNION_LOCATION="/mnt/union"
 
-# This is inelegant, but I don't care
-umount "$UNION_LOCATION"/tmp
-umount "$UNION_LOCATION"/proc
-umount "$UNION_LOCATION"/sys
-umount "$UNION_LOCATION"/dev/shm
-umount "$UNION_LOCATION"/dev/pts
-umount "$UNION_LOCATION"/dev
-umount "$UNION_LOCATION"/
+processes="$(lsof -t "$UNION_LOCATION")"
 
-umount "$CACHE_LOCATION"
+if [ -n "$processes" ]; then
+	echo "Some processes are still using the mirror, kill anyway?"
+	read answer
+	if [ "$answer" = "y" -o "$answer" = "yes" ]; then
+		echo "$processes" | xargs kill 
+	else
+		exit
+	fi
+fi
+
+# This is inelegant, but I don't care
+umount -l "$UNION_LOCATION"/tmp
+umount -l "$UNION_LOCATION"/proc
+umount -l "$UNION_LOCATION"/sys
+umount -l "$UNION_LOCATION"/dev/shm
+umount -l "$UNION_LOCATION"/dev/pts
+umount -l "$UNION_LOCATION"/dev
+umount -l "$UNION_LOCATION"/
+
+umount -l "$CACHE_LOCATION"
