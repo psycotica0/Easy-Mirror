@@ -1,0 +1,68 @@
+#!/bin/sh
+
+IMAGE_FILE="/home/psycotica0/cache.img"
+IMAGE_SIZE="400M"
+CACHE_LOCATION="/mnt/cache"
+UNION_LOCATION="/mnt/union"
+
+if [ "$(whoami)" != "root" ]; then
+	echo "You're going to want to be root" >&2;
+	exit 2
+fi
+
+if [ ! -e "$IMAGE_FILE" ]; then
+	# Creating Image
+	truncate -s "$IMAGE_SIZE" "$IMAGE_FILE"
+	if [ "$?" -ne 0 ]; then
+		rm "$IMAGE_FILE"
+		echo "Failed To Allocate ${IMAGE_SIZE} for Image" >&2;
+		exit 1
+	fi
+
+	mkfs.ext2 "$IMAGE_FILE"
+	echo "Image Created"
+fi
+
+if [ -z "$(mount | grep -w "$CACHE_LOCATION")" ]; then
+	# Mounting Image
+	mkdir -p "$CACHE_LOCATION"
+	mount -t ext2 "$IMAGE_FILE" "$CACHE_LOCATION" -o loop
+	if [ "$?" -ne 0 ]; then
+		echo "Failed to Mount Image" >&2;
+		exit 1
+	fi
+	echo "Mounted Image"
+fi
+
+if [ -z "$(mount | grep -w "$UNION_LOCATION")" ]; then
+	# Create Union
+	mount -t aufs -o dirs="$CACHE_LOCATION:/=ro" none "$UNION_LOCATION"
+	if [ "$?" -ne 0 ]; then
+		echo "Failed to Mount Union" >&2;
+		exit 1
+	fi
+	echo "Mounted Union"
+fi
+
+if [ -z "$(mount | grep -w "$UNION_LOCATION"/dev)" ]; then
+	mount --bind /dev "$UNION_LOCATION"/dev 2> /dev/null
+fi
+
+if [ -z "$(mount -t devpts | grep -w "$UNION_LOCATION"/dev/pts)" ]; then
+	mount -t devpts devpts "$UNION_LOCATION"/dev/pts 2> /dev/null
+fi
+if [ -z "$(mount -t tmpfs | grep -w "$UNION_LOCATION"/dev/shm)" ]; then
+	mount -t tmpfs shm "$UNION_LOCATION"/dev/shm 2> /dev/null
+fi
+
+if [ -z "$(mount -t sysfs | grep -w "$UNION_LOCATION"/sys)" ]; then
+	mount -t sysfs sysfs "$UNION_LOCATION"/sys 2> /dev/null
+fi
+
+if [ -z "$(mount -t proc | grep -w "$UNION_LOCATION"/proc)" ]; then
+	mount -t proc proc "$UNION_LOCATION"/proc 2> /dev/null
+fi
+if [ -z "$(mount | grep -w "$UNION_LOCATION"/tmp)" ]; then
+	mount --bind /tmp "$UNION_LOCATION"/tmp 2> /dev/null
+fi
+

@@ -1,0 +1,24 @@
+This is a few scripts to build a quick chroot mirror of your whole system.
+It allows you to build up a mirror, enter into it, and then break it down.
+
+They all need to be run as root.
+
+So:
+
+sudo ./build_mirror
+This makes a file called cache.img.
+It then mounts it to /mnt/cache and /mnt/union.
+If cache.img exists, it mounts it.
+
+sudo ./enter_mirror
+This logs you in to the new image.
+
+sudo ./breakdown_mirror
+This unmounts all the areas.
+It does not delete cache.img
+You can do whatever you want with cache.img
+
+
+Tip:
+I tend to change .bashrc when I make a new image to put CHROOT in the PS1.
+That way I can tell when I'm in and when I'm not.
