@@ -1,6 +1,5 @@
 #!/bin/sh
 
 UNION_LOCATION="/mnt/union"
-USER="psycotica0"
 
-chroot "$UNION_LOCATION" su -l "$USER"
+chroot "$UNION_LOCATION" su -l "$SUDO_USER"
