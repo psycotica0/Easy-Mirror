@@ -9,6 +9,7 @@ if [ -z "$IMAGE_FILE" ]; then
 	echo "Please pass the path where you want your image file" >&2
 fi
 
+# Need to be root for some mount operations
 if [ "$(whoami)" != "root" ]; then
 	echo "You're going to want to be root" >&2;
 	exit 2
