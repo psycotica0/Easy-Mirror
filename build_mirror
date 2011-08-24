@@ -23,7 +23,7 @@ if [ ! -e "$IMAGE_FILE" ]; then
 		exit 1
 	fi
 
-	mkfs.ext2 "$IMAGE_FILE"
+	mkfs.ext2 -M "$UNION_LOCATION" -F "$IMAGE_FILE"
 	echo "Image Created"
 fi
 
