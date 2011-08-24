@@ -1,9 +1,13 @@
 #!/bin/sh
 
-IMAGE_FILE="/home/psycotica0/cache.img"
+IMAGE_FILE="$1"
 IMAGE_SIZE="400M"
 CACHE_LOCATION="/mnt/cache"
 UNION_LOCATION="/mnt/union"
+
+if [ -z "$IMAGE_FILE" ]; then
+	echo "Please pass the path where you want your image file" >&2
+fi
 
 if [ "$(whoami)" != "root" ]; then
 	echo "You're going to want to be root" >&2;
