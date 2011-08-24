@@ -11,16 +11,15 @@ fi
 
 # Need to be root for some mount operations
 if [ "$(whoami)" != "root" ]; then
-	echo "You're going to want to be root" >&2;
+	echo "You're going to want to be root" >&2
 	exit 2
 fi
 
 if [ ! -e "$IMAGE_FILE" ]; then
 	# Creating Image
-	truncate -s "$IMAGE_SIZE" "$IMAGE_FILE"
-	if [ "$?" -ne 0 ]; then
+	if ! truncate -s "$IMAGE_SIZE" "$IMAGE_FILE"; then
 		rm "$IMAGE_FILE"
-		echo "Failed To Allocate ${IMAGE_SIZE} for Image" >&2;
+		echo "Failed To Allocate $IMAGE_SIZE for Image" >&2
 		exit 1
 	fi
 
@@ -31,9 +30,8 @@ fi
 if [ -z "$(mount | grep -w "$CACHE_LOCATION")" ]; then
 	# Mounting Image
 	mkdir -p "$CACHE_LOCATION"
-	mount -t ext2 "$IMAGE_FILE" "$CACHE_LOCATION" -o loop
-	if [ "$?" -ne 0 ]; then
-		echo "Failed to Mount Image" >&2;
+	if ! mount -t ext2 -o loop "$IMAGE_FILE" "$CACHE_LOCATION"; then
+		echo "Failed to Mount Image" >&2
 		exit 1
 	fi
 	echo "Mounted Image"
@@ -41,9 +39,8 @@ fi
 
 if [ -z "$(mount | grep -w "$UNION_LOCATION")" ]; then
 	# Create Union
-	mount -t aufs -o dirs="$CACHE_LOCATION:/=ro" none "$UNION_LOCATION"
-	if [ "$?" -ne 0 ]; then
-		echo "Failed to Mount Union" >&2;
+	if ! mount -t aufs -o dirs="$CACHE_LOCATION:/=ro" none "$UNION_LOCATION"; then
+		echo "Failed to Mount Union" >&2
 		exit 1
 	fi
 	echo "Mounted Union"
@@ -70,4 +67,3 @@ fi
 if [ -z "$(mount | grep -w "$UNION_LOCATION"/tmp)" ]; then
 	mount --bind /tmp "$UNION_LOCATION"/tmp 2> /dev/null
 fi
-
