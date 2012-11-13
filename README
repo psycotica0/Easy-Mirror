@@ -5,18 +5,23 @@ They all need to be run as root.
 
 So:
 
-sudo ./build_mirror
-This makes a file called cache.img.
-It then mounts it to /mnt/cache and /mnt/union.
-If cache.img exists, it mounts it.
+sudo build_mirror test.img
+This makes a file called test.img.
+It mounts it to /mnt/easy_mirror/test/cache.
+Then it makes a union between that and / at /mnt/easy_mirror/test/union.
+If test.img already existed, then it's used as is.
+Otherwise a new, empty, one is created.
 
-sudo ./enter_mirror
+sudo enter_mirror
 This logs you in to the new image.
+If you have more than one mounted at a time, then you'll need to specify.
+sudo enter_mirror test
 
-sudo ./breakdown_mirror
-This unmounts all the areas.
-It does not delete cache.img
-You can do whatever you want with cache.img
+sudo breakdown_mirror
+This attempts to cleanly unmount the mirror
+It does not delete the image file (test.img).
+If you have more than one mounted at a time, then you'll need to specify.
+sudo breakdown_mirror test
 
 
 Tip:
