@@ -3,6 +3,10 @@
 DATA_LOCATION="/mnt/easy_mirror"
 MIRROR_NAME="$1"
 
+if [ "$#" -gt 0 ]; then
+	shift
+fi
+
 if [ '!' -d "$DATA_LOCATION" ]; then
 	echo "There are no active mirrors" >&2
 	exit 1
@@ -24,4 +28,10 @@ if [ -z "$MIRROR_NAME" ]; then
 	fi
 fi
 
-chroot "$DATA_LOCATION/$MIRROR_NAME/union" su -l "$SUDO_USER"
+if [ "$#" = 0 ]; then
+	# We weren't given a command, so just run a shell
+	chroot "$DATA_LOCATION/$MIRROR_NAME/union" su -l "$SUDO_USER"
+else
+	# Run the commands we were given
+	chroot "$DATA_LOCATION/$MIRROR_NAME/union" sudo -u "$SUDO_USER" "$@"
+fi
