@@ -2,12 +2,18 @@
 
 IMAGE_FILE="$1"
 IMAGE_SIZE="1600M"
-CACHE_LOCATION="/mnt/cache"
-UNION_LOCATION="/mnt/union"
+DATA_LOCATION="/mnt/easy_mirror"
+MIRROR_NAME="$2"
 
 if [ -z "$IMAGE_FILE" ]; then
 	echo "Please pass the path where you want your image file" >&2
 fi
+
+if [ -z "$MIRROR_NAME" ]; then
+	MIRROR_NAME="$(basename "${IMAGE_FILE%.*}")"
+fi
+
+MIRROR_LOCATION="$DATA_LOCATION/$MIRROR_NAME"
 
 # Need to be root for some mount operations
 if [ "$(whoami)" != "root" ]; then
@@ -27,43 +33,38 @@ if [ ! -e "$IMAGE_FILE" ]; then
 	echo "Image Created"
 fi
 
-if [ -z "$(mount | grep -w "$CACHE_LOCATION")" ]; then
-	# Mounting Image
-	mkdir -p "$CACHE_LOCATION"
-	if ! mount -t ext2 -o loop "$IMAGE_FILE" "$CACHE_LOCATION"; then
-		echo "Failed to Mount Image" >&2
-		exit 1
-	fi
-	echo "Mounted Image"
+if [ -d "$MIRROR_LOCATION" ]; then
+	echo "Folder already exists at '$MIRROR_LOCATION'" >&2
+	echo "Remove that folder if you wish to continue, or choose another name for this mirror" >&2
+	exit 1
 fi
 
-if [ -z "$(mount | grep -w "$UNION_LOCATION")" ]; then
-	# Create Union
-	if ! mount -t aufs -o dirs="$CACHE_LOCATION:/=ro" none "$UNION_LOCATION"; then
-		echo "Failed to Mount Union" >&2
-		exit 1
-	fi
-	echo "Mounted Union"
-fi
+CACHE_LOCATION="$MIRROR_LOCATION/cache"
+UNION_LOCATION="$MIRROR_LOCATION/union"
 
-if [ -z "$(mount | grep -w "$UNION_LOCATION"/dev)" ]; then
-	mount --bind /dev "$UNION_LOCATION"/dev 2> /dev/null
-fi
+mkdir -p "$MIRROR_LOCATION" "$CACHE_LOCATION" "$MIRROR_LOCATION/union"
 
-if [ -z "$(mount -t devpts | grep -w "$UNION_LOCATION"/dev/pts)" ]; then
-	mount -t devpts devpts "$UNION_LOCATION"/dev/pts 2> /dev/null
+if ! mount -t ext2 -o loop "$IMAGE_FILE" "$CACHE_LOCATION"; then
+	echo "Failed to Mount Image" >&2
+	exit 1
 fi
-if [ -z "$(mount -t tmpfs | grep -w "$UNION_LOCATION"/dev/shm)" ]; then
-	mount -t tmpfs shm "$UNION_LOCATION"/dev/shm 2> /dev/null
-fi
+echo "Mounted Image"
 
-if [ -z "$(mount -t sysfs | grep -w "$UNION_LOCATION"/sys)" ]; then
-	mount -t sysfs sysfs "$UNION_LOCATION"/sys 2> /dev/null
+# Create Union
+if ! mount -t aufs -o dirs="$CACHE_LOCATION:/=ro" none "$UNION_LOCATION"; then
+	echo "Failed to Mount Union" >&2
+	exit 1
 fi
+echo "Mounted Union"
 
-if [ -z "$(mount -t proc | grep -w "$UNION_LOCATION"/proc)" ]; then
-	mount -t proc proc "$UNION_LOCATION"/proc 2> /dev/null
-fi
-if [ -z "$(mount | grep -w "$UNION_LOCATION"/tmp)" ]; then
-	mount --bind /tmp "$UNION_LOCATION"/tmp 2> /dev/null
-fi
+mount --bind /dev "$UNION_LOCATION"/dev 2> /dev/null
+
+mount -t devpts devpts "$UNION_LOCATION"/dev/pts 2> /dev/null
+
+mount -t tmpfs shm "$UNION_LOCATION"/dev/shm 2> /dev/null
+
+mount -t sysfs sysfs "$UNION_LOCATION"/sys 2> /dev/null
+
+mount -t proc proc "$UNION_LOCATION"/proc 2> /dev/null
+
+mount --bind /tmp "$UNION_LOCATION"/tmp 2> /dev/null

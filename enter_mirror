@@ -1,5 +1,27 @@
 #!/bin/sh
 
-UNION_LOCATION="/mnt/union"
+DATA_LOCATION="/mnt/easy_mirror"
+MIRROR_NAME="$1"
 
-chroot "$UNION_LOCATION" su -l "$SUDO_USER"
+if [ '!' -d "$DATA_LOCATION" ]; then
+	echo "There are no active mirrors" >&2
+	exit 1
+fi
+
+# Need to be root to chroot
+if [ "$(whoami)" != "root" ]; then
+	echo "You're going to want to be root" >&2
+	exit 2
+fi
+
+if [ -z "$MIRROR_NAME" ]; then
+	if [ "$(ls "$DATA_LOCATION" | wc -l)" = 1 ]; then
+		# Pick the only open mirror
+		MIRROR_NAME="$(ls "$DATA_LOCATION")"
+	else
+		echo "Mirror name must be given" >&2
+		exit 1
+	fi
+fi
+
+chroot "$DATA_LOCATION/$MIRROR_NAME/union" su -l "$SUDO_USER"

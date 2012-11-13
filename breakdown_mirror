@@ -1,27 +1,62 @@
 #!/bin/sh
 
-CACHE_LOCATION="/mnt/cache"
-UNION_LOCATION="/mnt/union"
+DATA_LOCATION="/mnt/easy_mirror"
+MIRROR_NAME="$1"
+
+if [ '!' -d "$DATA_LOCATION" ]; then
+	echo "There are no active mirrors" >&2
+	exit 1
+fi
+
+# Need to be root to chroot
+if [ "$(whoami)" != "root" ]; then
+	echo "You're going to want to be root" >&2
+	exit 2
+fi
+
+if [ -z "$MIRROR_NAME" ]; then
+	if [ "$(ls "$DATA_LOCATION" | wc -l)" = 1 ]; then
+		# Pick the only open mirror
+		MIRROR_NAME="$(ls "$DATA_LOCATION")"
+	else
+		echo "Mirror name must be given" >&2
+		exit 1
+	fi
+fi
+
+UNION_LOCATION="$DATA_LOCATION/$MIRROR_NAME/union"
+CACHE_LOCATION="$DATA_LOCATION/$MIRROR_NAME/cache"
+
+if [ '!' -d "$UNION_LOCATION" ]; then
+	echo "'$DATA_LOCATION/$MIRROR_NAME' doesn't appear to be a mirror" >&2
+	exit 4
+fi
 
 processes="$(lsof -t "$UNION_LOCATION")"
 
 if [ -n "$processes" ]; then
 	echo "Some processes are still using the mirror, kill anyway?"
 	read answer
-	if [ "$answer" = "y" -o "$answer" = "yes" ]; then
+	if [ "$answer" = "Y" -o "$answer" = "y" -o "$answer" = "yes" ]; then
 		echo "$processes" | xargs kill 
 	else
-		exit
+		echo "Aborting breakdown"
+		exit 3
 	fi
 fi
 
 # This is inelegant, but I don't care
-umount -l "$UNION_LOCATION"/tmp
-umount -l "$UNION_LOCATION"/proc
-umount -l "$UNION_LOCATION"/sys
-umount -l "$UNION_LOCATION"/dev/shm
-umount -l "$UNION_LOCATION"/dev/pts
-umount -l "$UNION_LOCATION"/dev
-umount -l "$UNION_LOCATION"/
+for dir in tmp proc sys dev/shm dev/pts dev .; do
+	umount "$UNION_LOCATION/$dir"
+done
 
-umount -l "$CACHE_LOCATION"
+rmdir "$UNION_LOCATION"
+
+umount "$CACHE_LOCATION"
+rmdir "$CACHE_LOCATION"
+
+rmdir "$DATA_LOCATION/$MIRROR_NAME"
+
+if [ "$(ls "$DATA_LOCATION" | wc -l)" = 0 ]; then
+	rmdir "$DATA_LOCATION"
+fi
