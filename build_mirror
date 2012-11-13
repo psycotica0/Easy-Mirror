@@ -12,7 +12,7 @@ if [ -z "$IMAGE_FILE" ]; then
 fi
 
 if [ -z "$MIRROR_NAME" ]; then
-	MIRROR_NAME="$(basename "${IMAGE_FILE%.*}")"
+	MIRROR_NAME="$(basename "$IMAGE_FILE" | sed 's/\.[^.]*$//')"
 fi
 
 MIRROR_LOCATION="$DATA_LOCATION/$MIRROR_NAME"
