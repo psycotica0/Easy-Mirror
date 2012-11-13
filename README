@@ -24,6 +24,27 @@ If you have more than one mounted at a time, then you'll need to specify.
 sudo breakdown_mirror test
 
 
-Tip:
-I tend to change .bashrc when I make a new image to put CHROOT in the PS1.
-That way I can tell when I'm in and when I'm not.
+Callbacks:
+I've got a system in place for scripts that you want to be run every time 
+a new mirror is setup.
+
+The scripts are searched for in ~/.local/share/easy_mirror/
+The '~' in this case is relative to the user who's running the scripts (Not root, even when under sudo)
+Similarly, the scripts are run by that user, not root.
+
+There are currently two:
+new_image.sh
+	This one is run every time a new cache file was created.
+	It is not run if you're just remounting an existing cache.
+new_mirror.sh
+	This one is run every time a new mirror is built, whether or not the image file is new.
+
+Both of these scripts are run with the name of the mirror as the first argument.
+If either of these scripts don't exist, or aren't executable, then they just won't be run.
+
+I use new_image.sh for adding
+export PS1="$MIRROR_NAME-$PS1"
+to ~/.bashrc, so I can tell the mirrors apart from each other, and the root system.
+
+I use new_mirror.sh to make sure some state is removed so that the mirror is independent from the host.
+

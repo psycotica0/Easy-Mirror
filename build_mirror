@@ -5,6 +5,8 @@ IMAGE_SIZE="1600M"
 DATA_LOCATION="/mnt/easy_mirror"
 MIRROR_NAME="$2"
 
+NEW_IMAGE="0"
+
 if [ -z "$IMAGE_FILE" ]; then
 	echo "Please pass the path where you want your image file" >&2
 fi
@@ -31,6 +33,7 @@ if [ ! -e "$IMAGE_FILE" ]; then
 
 	mkfs.ext2 -M "$UNION_LOCATION" -F "$IMAGE_FILE"
 	echo "Image Created"
+	NEW_IMAGE="1"
 fi
 
 if [ -d "$MIRROR_LOCATION" ]; then
@@ -68,3 +71,16 @@ mount -t sysfs sysfs "$UNION_LOCATION"/sys 2> /dev/null
 mount -t proc proc "$UNION_LOCATION"/proc 2> /dev/null
 
 mount --bind /tmp "$UNION_LOCATION"/tmp 2> /dev/null
+
+# Check for "callbacks"
+NEW_MIRROR_CALLBACK="/home/$SUDO_USER/.local/share/easy_mirror/new_mirror.sh"
+NEW_IMAGE_CALLBACK="/home/$SUDO_USER/.local/share/easy_mirror/new_image.sh"
+if [ "$NEW_IMAGE" = 1 -a -x "$NEW_IMAGE_CALLBACK" ]; then
+	echo "Running New Image Callback"
+	enter_mirror "$MIRROR_NAME" "$NEW_IMAGE_CALLBACK" "$MIRROR_NAME"
+fi
+
+if [ -x "$UNION_LOCATION/$NEW_MIRROR_CALLBACK" ]; then
+	echo "Running New Mirror Callback"
+	enter_mirror "$MIRROR_NAME" "$NEW_MIRROR_CALLBACK" "$MIRROR_NAME"
+fi
